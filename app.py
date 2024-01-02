@@ -20,6 +20,8 @@ sd_pipe = StableDiffusionPipeline.from_pretrained(sd_model_id,torch_dtype=torch.
 sd_pipe.scheduler = DDIMScheduler.from_config(sd_model_id, subfolder = "scheduler")
 sem_pipe = SemanticStableDiffusionPipeline.from_pretrained(sd_model_id, torch_dtype=torch.float16).to(device)
 blip_processor = AutoProcessor.from_pretrained("Salesforce/blip-image-captioning-base")
+# blip model: provides an automated way to create natural language descriptions for visual content using deep learning. Salesforce creates it.
+    # usually consists of 1) visual encoder (ResNet) that extracts features & 2) Text decoder (transformer) that attaches captions based on visual extracted features.
 blip_model = BlipForConditionalGeneration.from_pretrained("Salesforce/blip-image-captioning-base",torch_dtype=torch.float16).to(device)
 
 
@@ -46,10 +48,12 @@ def invert(x0, prompt_src="", num_diffusion_steps=100, cfg_scale_src = 3.5, eta 
   #  wts - intermediate inverted latents
   #  zs - noise maps
 
+  # setting timesteps
   sd_pipe.scheduler.set_timesteps(num_diffusion_steps)
 
   # vae encode image
   with inference_mode():
+    # sd_pipe is a pretrained stable diffusion pipeline
     w0 = (sd_pipe.vae.encode(x0).latent_dist.mode() * 0.18215)
 
   # find Zs and wts - forward process
