@@ -1,3 +1,4 @@
+# Gradio is an open-source Python package that allows you to quickly build a demo or web application for your machine learning model, API, or any arbitary Python function.
 import gradio as gr
 import torch
 import numpy as np
@@ -8,6 +9,7 @@ from utils import *
 from constants import *
 from inversion_utils import *
 from modified_pipeline_semantic_stable_diffusion import SemanticStableDiffusionPipeline
+# inference_mode is similar to no_grad, when you are running something that is not training, it is much more efficient. Context manager.
 from torch import autocast, inference_mode
 from diffusers import StableDiffusionPipeline
 from diffusers import DDIMScheduler
@@ -26,7 +28,7 @@ blip_model = BlipForConditionalGeneration.from_pretrained("Salesforce/blip-image
 
 
 
-## IMAGE CPATIONING ##
+## IMAGE CAPTIONING ##
 def caption_image(input_image):
     inputs = blip_processor(images=input_image, return_tensors="pt").to(device, torch.float16)
     pixel_values = inputs.pixel_values
@@ -38,6 +40,9 @@ def caption_image(input_image):
 
 
 ## DDPM INVERSION AND SAMPLING ##
+# The CFG Scale, standing for Classifier-Free Guidance Scale, is a pivotal parameter within the Stable Diffusion model. 
+    # It dictates how closely the generated image mirrors a user's prompt or input image.
+# eta: noise scalar
 def invert(x0, prompt_src="", num_diffusion_steps=100, cfg_scale_src = 3.5, eta = 1):
 
   #  inverts a real image according to Algorihm 1 in https://arxiv.org/pdf/2304.06140.pdf,
@@ -52,6 +57,7 @@ def invert(x0, prompt_src="", num_diffusion_steps=100, cfg_scale_src = 3.5, eta 
   sd_pipe.scheduler.set_timesteps(num_diffusion_steps)
 
   # vae encode image
+  # Encodes the input image x0 using the VAE encoder of the Stable Diffusion pipeline to get the initial latent w0.
   with inference_mode():
     # sd_pipe is a pretrained stable diffusion pipeline
     w0 = (sd_pipe.vae.encode(x0).latent_dist.mode() * 0.18215)
@@ -124,6 +130,7 @@ def load_and_invert(
 
 ## SEGA ##
 
+# semantic guidance = SEGA
 def edit(input_image,
             wts, zs,
             tar_prompt,
@@ -355,6 +362,16 @@ help_text = """
 
     1. `Guidance Scale`
     2. `Concept Guidance Scale` (SEGA)
+
+    The demo UI allows a user to:
+
+    Upload an image
+    Invert it automatically using DDPM
+    View the inverted reconstruction
+    Edit text prompts and sampling params
+    Add semantic guidance concepts (SEGA)
+    Generate an edited image with DDPM and SEGA
+    Adjust various parameters to control editing
 """
 
 with gr.Blocks(css="style.css") as demo:
