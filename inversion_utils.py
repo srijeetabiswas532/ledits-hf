@@ -8,25 +8,34 @@ import os
 import yaml
 import numpy as np
 
-
+"""
+So in summary, it takes an image, preprocesses it by cropping and resizing to 512x512, and converts it to a PyTorch tensor ready for use in neural networks 
+and GPU processing. This standardizes the input image before inversion or editing.
+"""
 def load_512(image_path, left=0, right=0, top=0, bottom=0, device=None):
+    # convert to RGB
     if type(image_path) is str:
         image = np.array(Image.open(image_path).convert('RGB'))[:, :, :3]
     else:
         image = image_path
     h, w, c = image.shape
+
+    # crops if given crop dims
     left = min(left, w-1)
     right = min(right, w - left - 1)
     top = min(top, h - left - 1)
     bottom = min(bottom, h - top - 1)
     image = image[top:h-bottom, left:w-right]
     h, w, c = image.shape
+    # matches smaller dim to larger dim
     if h < w:
         offset = (w - h) // 2
         image = image[:, offset:offset + h]
     elif w < h:
         offset = (h - w) // 2
         image = image[offset:offset + w]
+
+    # resizes
     image = np.array(Image.fromarray(image).resize((512, 512)))
     image = torch.from_numpy(image).float() / 127.5 - 1
     image = image.permute(2, 0, 1).unsqueeze(0).to(device, dtype =torch.float16)
